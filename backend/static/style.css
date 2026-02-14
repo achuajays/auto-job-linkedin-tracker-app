@@ -645,3 +645,47 @@ body {
 .btn-primary-sm:hover {
     background: #cbb4c6;
 }
+
+/* ---------- Buttons ---------- */
+
+.btn-text-sm {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-text-sm:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+/* ---------- Name Input Modal ---------- */
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.name-input {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    color: var(--text-primary);
+    border-radius: 6px;
+    outline: none;
+    font-family: var(--font-body);
+    width: 100%;
+}
+
+.name-input:focus {
+    border-color: var(--accent-mauve);
+}

@@ -54,8 +54,8 @@
                 <div class="stats-value">{{ total }}</div>
             </div>
             <div class="user-section">
-                <div class="avatar">AD</div>
-                <span class="user-name">Adarsh</span>
+                <div class="avatar" id="user-avatar-display">AD</div>
+                <span class="user-name" id="user-name-display">Adarsh</span>
             </div>
         </div>
     </aside>
@@ -160,8 +160,57 @@
         </div>
     </div>
 
+    <!-- Name Input Modal -->
+    <div id="name-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <h2>Welcome!</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Please enter your name to
+                    personalize your dashboard.</p>
+            </div>
+            <div class="modal-body">
+                <div class="name-input-container">
+                    <input type="text" id="user-name-input" class="name-input" placeholder="Your Name"
+                        onkeydown="if(event.key==='Enter') saveName()">
+                    <button class="btn-primary-sm" onclick="saveName()" style="justify-content: center;">Save &
+                        Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let confirmCallback = null;
+
+        // Check for user name on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('jobTrackerUserName');
+            if (savedName) {
+                updateUserDisplay(savedName);
+            } else {
+                document.getElementById('name-modal').style.display = 'flex';
+                document.getElementById('user-name-input').focus();
+            }
+        });
+
+        function saveName() {
+            const nameInput = document.getElementById('user-name-input');
+            const name = nameInput.value.trim();
+            if (name) {
+                localStorage.setItem('jobTrackerUserName', name);
+                updateUserDisplay(name);
+                document.getElementById('name-modal').style.display = 'none';
+            } else {
+                nameInput.style.borderColor = 'var(--danger)';
+            }
+        }
+
+        function updateUserDisplay(name) {
+            document.getElementById('user-name-display').textContent = name;
+            // distinct avatar logic
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('user-avatar-display').textContent = initials;
+        }
 
         async function openModal(jobId) {
             try {
