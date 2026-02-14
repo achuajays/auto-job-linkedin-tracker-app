@@ -320,15 +320,7 @@
                 }
             }, 2500);
         }
-        // Auto-refresh every 2 seconds
-        setInterval(() => {
-            // Don't refresh if modal is open or user is interacting with a dropdown
-            if (document.getElementById('job-modal').style.display === 'flex') return;
-            if (document.activeElement.tagName === 'SELECT') return;
 
-            // Reload the page
-            location.reload();
-        }, 2000);
     </script>
 </body>
 
