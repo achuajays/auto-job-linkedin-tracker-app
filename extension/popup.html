@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Tracker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <!-- Header — always visible -->
+    <div class="header">
+        <div class="logo-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D2240" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 3h-8l-2 4h12z" />
+            </svg>
+        </div>
+        <span class="logo-text">Job Tracker</span>
+    </div>
+
+    <!-- State 1: First-time setup (no URL saved) -->
+    <div id="setup-view" class="view" style="display: none;">
+        <div class="setup-body">
+            <svg class="setup-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B09AAB"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                <line x1="6" y1="6" x2="6.01" y2="6" />
+                <line x1="6" y1="18" x2="6.01" y2="18" />
+            </svg>
+            <h2 class="setup-title">Connect to Backend</h2>
+            <p class="setup-desc">Enter your FastAPI backend URL to start tracking job applications.</p>
+            <div class="field">
+                <label>API Base URL</label>
+                <input type="url" id="api-url-setup" placeholder="http://localhost:8000" spellcheck="false">
+            </div>
+            <button id="save-btn" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Save & Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- State 2: Connected (URL saved) -->
+    <div id="connected-view" class="view" style="display: none;">
+        <div class="connected-body">
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                <span>Connected</span>
+            </div>
+            <p class="connected-url" id="display-url"></p>
+
+            <a href="#" id="dashboard-link" class="btn-secondary" target="_blank">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Open Dashboard
+            </a>
+
+            <button id="edit-url-btn" class="btn-ghost">Change API URL</button>
+        </div>
+
+        <!-- Inline edit (hidden by default) -->
+        <div id="edit-section" class="edit-section" style="display: none;">
+            <div class="field">
+                <label>API Base URL</label>
+                <input type="url" id="api-url-edit" placeholder="http://localhost:8000" spellcheck="false">
+            </div>
+            <div class="edit-actions">
+                <button id="update-btn" class="btn-primary btn-sm">Update</button>
+                <button id="cancel-btn" class="btn-ghost btn-sm">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
