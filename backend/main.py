@@ -206,53 +206,39 @@ def analytics_view(request: Request, db: Session = Depends(get_db)):
     # Active processes
     active_processes = interviews
 
-    # Timeline data (last 30 days usually, but here all time for simplicity)
+    # Timeline data
     timeline_counts = {}
     for job in jobs:
         date_str = job.applied_date.strftime("%Y-%m-%d")
         timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
-    
-    # Sort timeline by date
     sorted_timeline = dict(sorted(timeline_counts.items()))
 
-    return templates.TemplateResponse(
-        "analytics.html",
-        {
-            "request": request,
-            "total_applied": total_applied,
-            "response_rate": response_rate,
-            "active_processes": active_processes,
-            "status_counts": status_counts,
-            "timeline_counts": sorted_timeline,
-        },
-    )
+    # Generate Insights/Guides
+    insights = []
+    if total_applied == 0:
+        insights.append({"icon": "🚀", "title": "Start your journey", "text": "Track your first application to get started!"})
+    else:
+        if total_applied < 5:
+            insights.append({"icon": "📈", "title": "Volume is key", "text": "Apply to a few more jobs to get better data."})
+        
+        if response_rate < 10 and total_applied > 10:
+            insights.append({"icon": "📝", "title": "Resume Review", "text": "Your response rate is under 10%. Consider refining your resume or cover letter."})
+        elif response_rate > 20: 
+            insights.append({"icon": "🔥", "title": "On Fire!", "text": "Your profile is getting great attention. Keep doing what you're doing!"})
 
-@app.get("/analytics", response_class=HTMLResponse)
-def analytics_view(request: Request, db: Session = Depends(get_db)):
-    jobs = db.query(JobApplication).all()
-
-    total_applied = len(jobs)
-    
-    # Calculate counts per status
-    status_counts = {}
-    for job in jobs:
-        status_counts[job.status] = status_counts.get(job.status, 0) + 1
-    
-    # Calculate response rate (Interviews + Offers) / Total
-    interviews = status_counts.get("Interview", 0) + status_counts.get("Offered", 0)
-    response_rate = round((interviews / total_applied * 100) if total_applied > 0 else 0, 1)
-
-    # Active processes
-    active_processes = interviews
-
-    # Timeline data (last 30 days usually, but here all time for simplicity)
-    timeline_counts = {}
-    for job in jobs:
-        date_str = job.applied_date.strftime("%Y-%m-%d")
-        timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
-    
-    # Sort timeline by date
-    sorted_timeline = dict(sorted(timeline_counts.items()))
+        if status_counts.get("Interview", 0) > 3 and status_counts.get("Offered", 0) == 0:
+            insights.append({"icon": "🤝", "title": "Interview Prep", "text": "You're getting interviews but no offers yet. Focus on mock interviews or STAR method."})
+        
+        # Check for ghosting (Applied > 14 days ago and still 'Applied')
+        ghosted_count = 0
+        now = datetime.now(timezone.utc)
+        for job in jobs:
+            days_since = (now - job.applied_date).days
+            if job.status == "Applied" and days_since > 14:
+                ghosted_count += 1
+        
+        if ghosted_count > 0:
+            insights.append({"icon": "👻", "title": "Follow Up", "text": f"You have {ghosted_count} applications older than 2 weeks. Time to send a follow-up email?"})
 
     return templates.TemplateResponse(
         "analytics.html",
@@ -263,5 +249,6 @@ def analytics_view(request: Request, db: Session = Depends(get_db)):
             "active_processes": active_processes,
             "status_counts": json.dumps(status_counts),
             "timeline_counts": json.dumps(sorted_timeline),
+            "insights": insights,
         },
     )

@@ -25,14 +25,32 @@
         <span class="stat-desc">Interviews & Offers</span>
     </div>
 
+    <!-- Insights Row -->
+    {% if insights %}
+    <div class="insights-card">
+        <h3>🎯 Job Search Guide</h3>
+        <div class="insights-list">
+            {% for insight in insights %}
+            <div class="insight-item">
+                <div class="insight-icon">{{ insight.icon }}</div>
+                <div class="insight-content">
+                    <h4>{{ insight.title }}</h4>
+                    <p>{{ insight.text }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Charts Row -->
-    <div class="chart-card">
+    <div class="chart-card half-width">
         <h3>Application Status</h3>
         <div class="chart-container">
             <canvas id="statusChart"></canvas>
         </div>
     </div>
-    <div class="chart-card">
+    <div class="chart-card half-width">
         <h3>Applications Timeline</h3>
         <div class="chart-container">
             <canvas id="timelineChart"></canvas>
@@ -76,21 +94,24 @@
     // Timeline Chart
     const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
     new Chart(ctxTimeline, {
-        type: 'bar',
+        type: 'line', // Changed to Line for better trend view
         data: {
             labels: Object.keys(timelineData),
             datasets: [{
                 label: 'Applications',
                 data: Object.values(timelineData),
-                backgroundColor: '#B09AAB',
-                borderRadius: 4
+                borderColor: '#74B9FF',
+                backgroundColor: 'rgba(116, 185, 255, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#74B9FF'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#C4B8D4' } },
+                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#C4B8D4', stepSize: 1 } },
                 x: { grid: { display: false }, ticks: { color: '#C4B8D4' } }
             },
             plugins: {
@@ -137,24 +158,102 @@
         color: var(--text-muted);
     }
 
-    .chart-card {
+    /* Insights Section */
+    .insights-card {
         grid-column: span 3;
+        background: linear-gradient(135deg, rgba(58, 47, 80, 0.5) 0%, rgba(45, 34, 64, 0.5) 100%);
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid var(--accent-mauve);
+    }
+
+    .insights-card h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+    }
+
+    .insights-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+    }
+
+    .insight-item {
+        display: flex;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 3px solid var(--accent-peach);
+    }
+
+    .insight-icon {
+        font-size: 24px;
+    }
+
+    .insight-content h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .insight-content p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+
+    /* Charts */
+    .chart-card {
         background: var(--bg-surface);
         padding: 24px;
         border-radius: 12px;
         border: 1px solid var(--border-color);
     }
 
-    .chart-card:nth-of-type(4) {
-        grid-column: span 1;
+    .half-width {
+        grid-column: span 3;
+        /* Mobile default */
     }
 
-    /* Status Chart */
-    .chart-card:nth-of-type(5) {
-        grid-column: span 2;
+    @media (min-width: 768px) {
+        .half-width {
+            grid-column: span 1;
+            /* Reset logic? grid is 3 cols */
+        }
+
+        /* Actually lets make grid 2 cols for charts section? */
+        /* Or just make chart cards span 1.5? Grid is 3. */
     }
 
-    /* Timeline Chart */
+    .chart-card.half-width {
+        grid-column: span 3;
+    }
+
+    @media (min-width: 1024px) {
+        .chart-card.half-width {
+            grid-column: span 1;
+            /* This makes them 1/3rd width. Wait grid is 3. */
+        }
+
+        /* Let's make charts take 1.5 each? No.
+           Let's make charts take full width or split.
+           Let's just make Grid 2 columns for charts?
+           CSS Grid is rigid.
+           Let's set .chart-card to different spans.
+        */
+        .chart-card:nth-of-type(5) {
+            grid-column: span 1;
+        }
+
+        .chart-card:nth-of-type(6) {
+            grid-column: span 2;
+        }
+    }
 
     .chart-card h3 {
         font-size: 16px;
