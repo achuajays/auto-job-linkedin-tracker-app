@@ -2,44 +2,6 @@ import json
 from fastapi import FastAPI, Depends, HTTPException, Request
 # ... (rest of imports)
 
-@app.get("/analytics", response_class=HTMLResponse)
-def analytics_view(request: Request, db: Session = Depends(get_db)):
-    jobs = db.query(JobApplication).all()
-
-    total_applied = len(jobs)
-    
-    # Calculate counts per status
-    status_counts = {}
-    for job in jobs:
-        status_counts[job.status] = status_counts.get(job.status, 0) + 1
-    
-    # Calculate response rate (Interviews + Offers) / Total
-    interviews = status_counts.get("Interview", 0) + status_counts.get("Offered", 0)
-    response_rate = round((interviews / total_applied * 100) if total_applied > 0 else 0, 1)
-
-    # Active processes
-    active_processes = interviews
-
-    # Timeline data (last 30 days usually, but here all time for simplicity)
-    timeline_counts = {}
-    for job in jobs:
-        date_str = job.applied_date.strftime("%Y-%m-%d")
-        timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
-    
-    # Sort timeline by date
-    sorted_timeline = dict(sorted(timeline_counts.items()))
-
-    return templates.TemplateResponse(
-        "analytics.html",
-        {
-            "request": request,
-            "total_applied": total_applied,
-            "response_rate": response_rate,
-            "active_processes": active_processes,
-            "status_counts": json.dumps(status_counts),
-            "timeline_counts": json.dumps(sorted_timeline),
-        },
-    )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -262,5 +224,44 @@ def analytics_view(request: Request, db: Session = Depends(get_db)):
             "active_processes": active_processes,
             "status_counts": status_counts,
             "timeline_counts": sorted_timeline,
+        },
+    )
+
+@app.get("/analytics", response_class=HTMLResponse)
+def analytics_view(request: Request, db: Session = Depends(get_db)):
+    jobs = db.query(JobApplication).all()
+
+    total_applied = len(jobs)
+    
+    # Calculate counts per status
+    status_counts = {}
+    for job in jobs:
+        status_counts[job.status] = status_counts.get(job.status, 0) + 1
+    
+    # Calculate response rate (Interviews + Offers) / Total
+    interviews = status_counts.get("Interview", 0) + status_counts.get("Offered", 0)
+    response_rate = round((interviews / total_applied * 100) if total_applied > 0 else 0, 1)
+
+    # Active processes
+    active_processes = interviews
+
+    # Timeline data (last 30 days usually, but here all time for simplicity)
+    timeline_counts = {}
+    for job in jobs:
+        date_str = job.applied_date.strftime("%Y-%m-%d")
+        timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
+    
+    # Sort timeline by date
+    sorted_timeline = dict(sorted(timeline_counts.items()))
+
+    return templates.TemplateResponse(
+        "analytics.html",
+        {
+            "request": request,
+            "total_applied": total_applied,
+            "response_rate": response_rate,
+            "active_processes": active_processes,
+            "status_counts": json.dumps(status_counts),
+            "timeline_counts": json.dumps(sorted_timeline),
         },
     )
