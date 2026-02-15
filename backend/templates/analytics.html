@@ -1,0 +1,172 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-left">
+        <h1>Analytics Dashboard</h1>
+        <p>Insights into your job search performance.</p>
+    </div>
+</div>
+
+<div class="analytics-grid">
+    <!-- Stats Row -->
+    <div class="stat-card">
+        <h3>Total Applied</h3>
+        <p class="stat-value">{{ total_applied }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>Response Rate</h3>
+        <p class="stat-value" style="color: var(--success);">{{ response_rate }}%</p>
+        <span class="stat-desc">Interviews & Offers / Total</span>
+    </div>
+    <div class="stat-card">
+        <h3>Active Processes</h3>
+        <p class="stat-value" style="color: var(--interview);">{{ active_processes }}</p>
+        <span class="stat-desc">Interviews & Offers</span>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="chart-card">
+        <h3>Application Status</h3>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Applications Timeline</h3>
+        <div class="chart-container">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Data passed from backend
+    const statusData = {{ status_counts | safe }};
+    const timelineData = {{ timeline_counts | safe }};
+
+    // Status Chart
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusData),
+            datasets: [{
+                data: Object.values(statusData),
+                backgroundColor: [
+                    '#F5D5A8', // Applied
+                    '#74B9FF', // Interview
+                    '#6BCB77', // Offered
+                    '#E87171', // Declined
+                    '#B0B0B0'  // Rejected
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { color: '#C4B8D4' } }
+            }
+        }
+    });
+
+    // Timeline Chart
+    const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+    new Chart(ctxTimeline, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(timelineData),
+            datasets: [{
+                label: 'Applications',
+                data: Object.values(timelineData),
+                backgroundColor: '#B09AAB',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#C4B8D4' } },
+                x: { grid: { display: false }, ticks: { color: '#C4B8D4' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+
+<style>
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 16px;
+    }
+
+    .stat-card {
+        background: var(--bg-surface);
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .stat-card h3 {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .stat-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .chart-card {
+        grid-column: span 3;
+        background: var(--bg-surface);
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .chart-card:nth-of-type(4) {
+        grid-column: span 1;
+    }
+
+    /* Status Chart */
+    .chart-card:nth-of-type(5) {
+        grid-column: span 2;
+    }
+
+    /* Timeline Chart */
+
+    .chart-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
