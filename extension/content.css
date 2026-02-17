@@ -1,53 +1,98 @@
 /* ================================================
    LinkedIn Job Tracker — Injected Button Styles
-   Based on extention.pen Track Button design
+   Mimics LinkedIn "Artdeco" Secondary Button
    ================================================ */
 
 .jt-track-btn {
+    /* Base Artdeco reset/setup */
     display: inline-flex;
+    justify-content: center;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
+    box-sizing: border-box;
+    padding: 6px 16px;
+    /* Similar to medium/small artdeco button */
     margin-left: 8px;
-    margin-top: 4px;
-    background: #0A66C2;
-    color: #FFFFFF;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 13px;
+    /* Space from Apply button */
+
+    /* Typography */
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
+    font-size: 1.6rem;
+    /* Calculated roughly to 16px or inherited */
     font-weight: 600;
+    line-height: 20px;
+
+    /* Visuals - Secondary Button Style */
+    background-color: transparent;
+    color: rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
     border: none;
-    border-radius: 0;
+    border-radius: 1.6rem;
+    /* Pill shape */
+
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.15s ease;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 167ms;
+    transition-property: background-color, box-shadow, color;
+
     white-space: nowrap;
     vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
 }
 
-.jt-track-btn:hover {
-    background: #004182;
-    transform: translateY(-1px);
+/* Hover State */
+.jt-track-btn:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.6);
+    /* Thicker border on hover */
+    color: rgba(0, 0, 0, 0.75);
 }
 
-.jt-track-btn:active {
-    transform: translateY(0);
+/* Active/Focus State */
+.jt-track-btn:active:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.6);
+    color: rgba(0, 0, 0, 0.9);
 }
 
+/* Disabled State */
 .jt-track-btn:disabled {
-    cursor: default;
-    opacity: 0.8;
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
-/* Feedback states */
-.jt-track-btn.jt-success {
-    background: #6BCB77;
-    color: #2D2240;
+/* Icon adjustment */
+.jt-track-btn span {
+    margin-right: 4px;
+    font-size: 1.2em;
+    line-height: 1;
 }
 
-.jt-track-btn.jt-error {
-    background: #E87171;
+
+/* ================================================
+   Feedback States (Success, Error, Warning)
+   Overrides the secondary style to be primary-like
+   ================================================ */
+
+.jt-success {
+    background-color: #057642 !important;
+    /* LinkedIn Green */
+    color: white !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
 }
 
-.jt-track-btn.jt-warning {
-    background: #F5D5A8;
-    color: #2D2240;
+.jt-error {
+    background-color: #cc1016 !important;
+    /* LinkedIn Red/Error */
+    color: white !important;
+    box-shadow: none !important;
+}
+
+.jt-warning {
+    background-color: #f5c400 !important;
+    /* LinkedIn Yellow/Warning */
+    color: #1d2226 !important;
+    /* Dark text for contrast */
+    box-shadow: none !important;
 }

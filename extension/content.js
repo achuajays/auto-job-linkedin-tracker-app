@@ -7,8 +7,36 @@
 (function () {
     "use strict";
 
-    const BUTTON_ID = "jt-track-btn";
-    const CHECK_INTERVAL = 2000;
+    const BUTTON_ID_PREFIX = "jt-track-btn-";
+    const PROCESSED_ATTR = "data-jt-processed";
+    const DEBUG_MODE = true; // Enabled for better troubleshooting
+
+    // Core selectors for the Apply button
+    const APPLY_BTN_SELECTORS = [
+        '.jobs-apply-button',
+        '[data-live-test-job-apply-button]',
+        '.jobs-apply-button--top-card',
+        'button[aria-label^="Easy Apply"]',
+        'button[aria-label^="Apply"]'
+    ];
+
+    // Priority containers to inject into (for better layout)
+    const CONTAINER_SELECTORS = [
+        '.jobs-s-apply',                // Sidebar
+        '.jobs-unified-top-card__content--two-pane', // Main top card
+        '.jobs-unified-top-card__actions-container', // New top card layout
+        '.jobs-details__main-content', // Search results right rail
+        '.jobs-search__job-details--container', // Search results container
+        '.mt5',
+        '.display-flex'
+    ];
+
+    let injectionTimeout = null;
+
+    /** Logger helper */
+    function log(msg, ...args) {
+        if (DEBUG_MODE) console.log(`[JobTracker] ${msg}`, ...args);
+    }
 
     /** Get the saved API URL from chrome storage */
     async function getApiUrl() {
@@ -21,10 +49,11 @@
 
     /** Scrape job details from the current LinkedIn job page */
     function scrapeJobData() {
-        // Job title
+        // Job title - try specific right-rail selectors first
         const titleEl =
             document.querySelector(".job-details-jobs-unified-top-card__job-title h1") ||
             document.querySelector(".jobs-unified-top-card__job-title") ||
+            document.querySelector(".job-details-jobs-unified-top-card__job-title") || // Search results right rail
             document.querySelector("h1.t-24") ||
             document.querySelector("h1");
 
@@ -32,7 +61,7 @@
         const companyEl =
             document.querySelector(".job-details-jobs-unified-top-card__company-name a") ||
             document.querySelector(".jobs-unified-top-card__company-name a") ||
-            document.querySelector(".job-details-jobs-unified-top-card__company-name") ||
+            document.querySelector(".job-details-jobs-unified-top-card__company-name") || // Search results right rail
             document.querySelector(".jobs-unified-top-card__company-name");
 
         // Description
@@ -42,11 +71,20 @@
             document.querySelector("#job-details");
 
         const job_title = titleEl ? titleEl.textContent.trim() : "Unknown Position";
-        const company = companyEl ? companyEl.textContent.trim() : "";
+        const company = companyEl ? companyEl.textContent.trim() : "Unknown Company";
         const fullDesc = descEl ? descEl.textContent.trim() : "";
-        // Truncate description to first 200 chars
+
+        // Truncate description
         const description = fullDesc.length > 200 ? fullDesc.substring(0, 200) + "…" : fullDesc;
-        const url = window.location.href.split("?")[0];
+
+        // Improve URL capture for search results
+        let url = window.location.href.split("?")[0];
+        // If we represent a search result with a currentJobId, try to construct a direct link
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentJobId = urlParams.get('currentJobId');
+        if (currentJobId) {
+            url = `https://www.linkedin.com/jobs/view/${currentJobId}/`;
+        }
 
         return { job_title, company, description, url };
     }
@@ -55,7 +93,7 @@
     async function trackJob(button) {
         const apiUrl = await getApiUrl();
         if (!apiUrl) {
-            showFeedback(button, "⚙️ Set API URL first", "warning");
+            showFeedback(button, "⚙️ Set API URL", "warning");
             return;
         }
 
@@ -67,6 +105,7 @@
 
         // Disable button while sending
         button.disabled = true;
+        button.originalText = button.innerHTML; // Save icon+text if present
         button.textContent = "⏳ Saving...";
 
         try {
@@ -85,7 +124,7 @@
                 console.error("[JobTracker] API error:", err);
             }
         } catch (e) {
-            showFeedback(button, "❌ No connection", "error");
+            showFeedback(button, "❌ Error", "error");
             console.error("[JobTracker] Network error:", e);
         }
     }
@@ -93,13 +132,13 @@
     /** Show temporary feedback on the button */
     function showFeedback(button, text, type) {
         button.textContent = text;
-        button.className = `jt-track-btn jt-${type}`;
+        button.classList.add(`jt-${type}`);
         button.disabled = type === "success";
 
         if (type !== "success") {
             setTimeout(() => {
-                button.textContent = "📋 Track Application";
-                button.className = "jt-track-btn";
+                button.innerHTML = button.originalHTML || '<span>+</span> Track';
+                button.classList.remove(`jt-${type}`);
                 button.disabled = false;
             }, 2500);
         }
@@ -107,62 +146,142 @@
 
     /** Create the Track Application button */
     function createButton() {
+        const uniqueId = BUTTON_ID_PREFIX + Math.random().toString(36).substr(2, 9);
         const btn = document.createElement("button");
-        btn.id = BUTTON_ID;
-        btn.className = "jt-track-btn";
-        btn.textContent = "📋 Track Application";
-        btn.addEventListener("click", () => trackJob(btn));
+        btn.id = uniqueId;
+        btn.className = "jt-track-btn artdeco-button artdeco-button--2 artdeco-button--secondary"; // Mimic LinkedIn styles
+        btn.innerHTML = '<span>+</span> Track'; // Add icon-like span
+        btn.originalHTML = btn.innerHTML;
+        btn.title = "Track this application in Job Tracker";
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            trackJob(btn);
+        });
         return btn;
     }
 
-    /** Find the Apply/Easy Apply buttons and inject our tracker */
-    function injectButton() {
-        // Find all potential apply buttons (both standard and Easy Apply)
-        // IDs like 'jobs-apply-button-id' are common but non-unique on LinkedIn
-        const applyButtons = document.querySelectorAll('.jobs-apply-button, [data-live-test-job-apply-button]');
+    /** Find ALL visible Apply buttons using multiple strategies */
+    function findApplyButtons() {
+        const found = new Set();
 
-        applyButtons.forEach(btn => {
-            // Avoid duplicate injections
-            if (btn.dataset.hasTrackButton === 'true') return;
+        // Strategy 1: Selectors
+        for (const selector of APPLY_BTN_SELECTORS) {
+            const buttons = document.querySelectorAll(selector);
+            buttons.forEach(btn => {
+                if (isVisible(btn)) found.add(btn);
+            });
+        }
 
-            // Find the container to inject into
-            // Priority: .jobs-s-apply (sidebar), .jobs-unified-top-card (main), or just parent
-            const container = btn.closest('.jobs-s-apply, .jobs-unified-top-card__content--two-pane, .mt5, .display-flex') || btn.parentElement;
+        // Strategy 2: Text Content (Fallback)
+        const allButtons = document.querySelectorAll('button');
+        allButtons.forEach(btn => {
+            if (found.has(btn)) return;
+            // Only check text if it looks like an apply button (e.g. primary/secondary/ghost)
+            // This prevents scanning thousands of buttons on the page
+            if (!btn.classList.contains('artdeco-button')) return;
 
-            if (!container) return;
+            const text = btn.textContent.trim().toLowerCase();
+            if ((text === 'apply' || text === 'easy apply') && isVisible(btn)) {
+                found.add(btn);
+            }
+        });
 
-            // Create a new button instance
-            const trackBtn = createButton();
+        return Array.from(found);
+    }
 
-            // Insert after the apply button
-            if (btn.nextSibling) {
-                btn.parentNode.insertBefore(trackBtn, btn.nextSibling);
-            } else {
-                btn.parentNode.appendChild(trackBtn);
+    /** Check visibility to avoid hidden buttons in other tabs/overlays */
+    function isVisible(elem) {
+        return !!(elem.offsetWidth || elem.offsetHeight || elem.getClientRects().length);
+    }
+
+    /** Find the best container to inject our button into */
+    function findInjectionContainer(applyBtn) {
+        // Try to find a known action bar container parent of the button
+        for (const selector of CONTAINER_SELECTORS) {
+            const container = applyBtn.closest(selector);
+            if (container) return container;
+        }
+        // Fallback: direct parent
+        return applyBtn.parentElement;
+    }
+
+    /** Main injection logic - now supports multiple buttons */
+    function injectButtons() {
+        // Use requestAnimationFrame to avoid layout thrashing during heavy DOM updates
+        requestAnimationFrame(() => {
+            const applyButtons = findApplyButtons();
+
+            if (applyButtons.length === 0) {
+                return;
             }
 
-            // Mark as injected
-            btn.dataset.hasTrackButton = 'true';
+            applyButtons.forEach(applyBtn => {
+                // If we already processed THIS specific button, skip
+                if (applyBtn.getAttribute(PROCESSED_ATTR) === "true") {
+                    return;
+                }
+
+                const container = findInjectionContainer(applyBtn);
+                if (!container) return;
+
+                // Also check if container already has a track button (redundancy check)
+                if (container.querySelector(`[id^="${BUTTON_ID_PREFIX}"]`)) {
+                    // Mark as processed so we don't check again
+                    applyBtn.setAttribute(PROCESSED_ATTR, "true");
+                    return;
+                }
+
+                log("Injecting button for:", applyBtn);
+
+                const trackBtn = createButton();
+
+                // Insert logic: try to put it next to the Apply button
+                if (applyBtn.parentNode === container) {
+                    // Sibling logic
+                    container.insertBefore(trackBtn, applyBtn.nextSibling);
+                } else {
+                    // Just append to container action bar
+                    container.appendChild(trackBtn);
+                }
+
+                // Mark the Apply button as processed
+                applyBtn.setAttribute(PROCESSED_ATTR, "true");
+            });
         });
     }
 
-    /** Watch for page changes (LinkedIn is an SPA) */
+    /** Debounced observer callback */
+    function debouncedInject() {
+        if (injectionTimeout) clearTimeout(injectionTimeout);
+        injectionTimeout = setTimeout(() => {
+            injectButtons();
+        }, 500); // Increased debounce to 500ms to be safer
+    }
+
+    /** Start watching the page */
     function startObserver() {
-        // Initial injection attempt
-        injectButton();
+        injectButtons(); // Initial run
 
-        // Re-check periodically (LinkedIn re-renders often)
-        setInterval(injectButton, CHECK_INTERVAL);
-
-        // Also observe DOM mutations
-        const observer = new MutationObserver(() => {
-            injectButton();
+        const observer = new MutationObserver((mutations) => {
+            // Lightweight check: only run if nodes added
+            let shouldRun = false;
+            for (const mutation of mutations) {
+                if (mutation.addedNodes.length > 0) {
+                    shouldRun = true;
+                    break;
+                }
+            }
+            if (shouldRun) debouncedInject();
         });
 
         observer.observe(document.body, {
             childList: true,
             subtree: true,
         });
+
+        // Backup: Run periodically in case of subtle changes
+        setInterval(debouncedInject, 3000);
     }
 
     // Start when DOM is ready
